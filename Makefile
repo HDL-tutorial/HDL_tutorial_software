@@ -4,7 +4,7 @@ OBJ_DIR = obj
 BIN_DIR = bin
 
 TARGET = send_bmp
-OBJS = $(OBJ_DIR)/bmp_header.o $(OBJ_DIR)/send_bmp.o
+OBJS = $(OBJ_DIR)/bmp_header.o $(OBJ_DIR)/fifo_api.o $(OBJ_DIR)/send_bmp.o
 LIBS = -lm -pthread
 LDFLAGS = 
 INCLUDE =
