@@ -8,7 +8,6 @@
 #include <fcntl.h>
 
 #include "bmp_header.h"
-#include "fifo_api.h"
 
 static const char *read_dev = "/dev/xillybus_read_32";
 static const char *write_dev = "/dev/xillybus_write_32";
@@ -31,10 +30,8 @@ double get_sec(timeval start, timeval end) {
 // Write to FIFO, read from standard output
 void *read_thread(void *arg)
 {
-	struct xillyfifo *fifo = (xillyfifo *)arg;
 	int do_bytes, read_bytes, remain_bytes;
 	int readable_bytes;
-	struct xillyinfo info;
 	int buf_size = 512 * 512;
 	unsigned int buf[buf_size];
 	int x = 0, y = 0; 
@@ -53,7 +50,6 @@ void *read_thread(void *arg)
 		if (read_bytes == 0) {
 			// Reached EOF. Quit without complaining.
 			std::cerr << "reached EOF" << std::endl;
-			fifo_done(fifo);
 			return NULL;
 		}
 
@@ -148,7 +144,6 @@ int main(int argc, char *argv[]) {
 	unsigned char *offset;
 
 	pthread_t tid[2];
-	struct xillyfifo fifo;
 
 	if(argc != 3) {
 		std::cerr << "Usage: send_bmp input output" << std::endl;
@@ -179,12 +174,6 @@ int main(int argc, char *argv[]) {
 	}
 	fclose(fpr);
 
-	// initialize FIFO
-	if (fifo_init(&fifo, 1)) {
-		std::cerr << "Failed to init" << std::endl;
-		exit(1);
-	}
-
 	// open devices
 	read_fd = open(read_dev, O_RDONLY);
 	if (read_fd < 0) {
@@ -207,7 +196,7 @@ int main(int argc, char *argv[]) {
 	}
 
 	// filter
-	if (pthread_create(&tid[0], NULL, read_thread, &fifo)) {
+	if (pthread_create(&tid[0], NULL, read_thread, NULL)) {
 		std::cerr << "Failed to create thread" << std::endl;
 		exit(1);
 	}
@@ -219,8 +208,6 @@ int main(int argc, char *argv[]) {
 
 	pthread_join(tid[0], NULL);
 	pthread_join(tid[1], NULL);
-
-	fifo_destroy(&fifo);
 
 	// Write BMP image
 	fpw = fopen(argv[2], "wb");
